@@ -125,6 +125,15 @@ function love.draw()
 	love.graphics.circle("line", love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, love.graphics.getHeight() / 2)
 
 	love.graphics.setColor(1, 1, 1)
+	love.graphics.setPointSize(8)
+	local forwardVector = vec3(0, 0, 1)
+	local cameraMatrixStationary = mat4.camera(vec3(), camera.orientation)
+	local forwardVectorProjected = projectionMatrix * cameraMatrixStationary * forwardVector
+	local forwardVectorScreen = (vec2(forwardVectorProjected.x, forwardVectorProjected.y) * 0.5 + 0.5) * vec2(love.graphics.getDimensions())
+	if forwardVectorProjected.z < 0 then
+		love.graphics.points(forwardVectorScreen.x, forwardVectorScreen.y)
+	end
+
 	love.graphics.print(
 		(translating and "translating" or "") .. "\n" ..
 		(rotating and "rotating" or "") .. "\n" ..
