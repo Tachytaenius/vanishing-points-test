@@ -15,7 +15,6 @@ local vfov
 local translating, rotating, controllingCube -- Bools for display
 
 function love.load()
-	love.graphics.setDepthMode("lequal", true)
 	love.graphics.setFrontFaceWinding("ccw")
 
 	camera = {
@@ -89,11 +88,13 @@ local function edge(a, b, modelToScreenMatrix)
 end
 
 function love.draw()
+	love.graphics.setDepthMode("always", false)
 	love.graphics.setColor(0.25, 0.25, 0.25)
 	love.graphics.line(0, love.graphics.getHeight() / 2, love.graphics.getWidth(), love.graphics.getHeight() / 2)
 	love.graphics.line(love.graphics.getWidth() / 2, 0, love.graphics.getWidth() / 2, love.graphics.getHeight())
 	love.graphics.setColor(1, 1, 1)
 
+	love.graphics.setDepthMode("lequal", true)
 	love.graphics.setShader(meshShader)
 	local projectionMatrix = mat4.perspectiveLeftHanded(love.graphics.getWidth() / love.graphics.getHeight(), math.rad(vfov), 100, 0.01)
 	local cameraMatrix = mat4.camera(camera.position, camera.orientation)
@@ -103,6 +104,7 @@ function love.draw()
 	love.graphics.draw(cube.mesh)
 	love.graphics.setShader()
 
+	love.graphics.setDepthMode("always", false)
 	love.graphics.setColor(1, 0, 0)
 	edge(vec3(1, 1, 1), vec3(-1, 1, 1), modelToScreenMatrix)
 	edge(vec3(1, -1, 1), vec3(-1, -1, 1), modelToScreenMatrix)
@@ -127,12 +129,20 @@ function love.draw()
 	love.graphics.setColor(1, 1, 1)
 	love.graphics.setPointSize(8)
 	local forwardVector = vec3(0, 0, 1)
+	local upVector = vec3(0, -1, 0)
 	local cameraMatrixStationary = mat4.camera(vec3(), camera.orientation)
 	local forwardVectorProjected = projectionMatrix * cameraMatrixStationary * forwardVector
 	local forwardVectorScreen = (vec2(forwardVectorProjected.x, forwardVectorProjected.y) * 0.5 + 0.5) * vec2(love.graphics.getDimensions())
+	local offVectorProjected = projectionMatrix * cameraMatrixStationary * vec3.rotate(forwardVector, quat.fromAxisAngle(upVector * 0.1))
+	local offVectorScreen = (vec2(offVectorProjected.x, offVectorProjected.y) * 0.5 + 0.5) * vec2(love.graphics.getDimensions())
 	if forwardVectorProjected.z < 0 then
 		love.graphics.points(forwardVectorScreen.x, forwardVectorScreen.y)
 	end
+	local direction = vec2.normalise(offVectorScreen - forwardVectorScreen)
+	local origin = forwardVectorScreen
+	local endpoint1 = origin - direction * 10000
+	local endpoint2 = origin + direction * 10000
+	love.graphics.line(endpoint1.x, endpoint1.y, endpoint2.x, endpoint2.y)
 
 	love.graphics.print(
 		(translating and "translating" or "") .. "\n" ..
